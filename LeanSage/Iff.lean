@@ -21,12 +21,18 @@ theorem isPrimitiveRoot_iff (a : ℕ) (p : ℕ) (prime : p.Prime) :
     · intro l w
       by_contra
       let l' := Nat.gcd l (p - 1)
-      have h1 : a^l' = 1 := sorry -- by Euclidean algorithm
-      have h2 : l' ∣ p - 1 := sorry
-      have h3 : ∃ q, q.Prime ∧ q ∣ (p - 1) / l' := sorry
-      obtain ⟨q, q_prime, q_dvd⟩ := h3
-      have h4 : ∃ c, l' * c = (p - 1) / q := sorry
-      obtain ⟨c, h5⟩ := h4
+      have hp : p - 1 ≠ 0 := by simp [prime.one_lt]
+      have l'nz : l' ≠ 0 := Nat.gcd_ne_zero_right hp
+      have h1 : (a : ZMod p)^l' = 1 := sorry -- by Euclidean algorithm
+      have h2 : l' ∣ p - 1 := Nat.gcd_dvd_right l (p - 1)
+      have hp1l : ¬ ((p - 1) / l' = 0 ∨ (p - 1) / l' = 1)
+      . sorry
+        -- simp [div_ne_zero hp (show l' ≠ _ from l'nz)] -- ??????
+      let q := (factors ((p - 1) / l')).head (by simp [hp1l])
+      have q_prime : q.Prime := prime_of_mem_factors (List.head_mem _)
+      have q_dvd : q ∣ (p - 1) / l' := dvd_of_mem_factors (List.head_mem _)
+      -- have h4 : ∃ c, l' * c = (p - 1) / q := by sorry
+      obtain ⟨c, h5⟩ := q_dvd
       have h6 : a^(l' * c) = 1 := sorry
       have h7 : a^((p-1)/q) ≠ 1 := sorry
       sorry
