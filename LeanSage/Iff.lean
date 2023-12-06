@@ -37,7 +37,11 @@ theorem isPrimitiveRoot_iff (a : ℕ) (p : ℕ) (prime : p.Prime) :
     specialize h2 ((p-1)/q)
     intro w
     specialize h2 ?_
-    · sorry
+    · norm_cast
+      convert (ZMod.eq_iff_modEq_nat p (b := 1)).mpr _
+      . simp
+      . show _ % _ = _ % _
+        simp [w, prime.one_lt, Nat.mod_eq_of_lt]
     have c0 : 0 < (p - 1) / q := by
       apply Nat.div_pos
       · exact le_of_dvd (Nat.sub_pos_iff_lt.mpr (Prime.one_lt prime)) dvd
