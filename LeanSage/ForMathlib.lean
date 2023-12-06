@@ -1,5 +1,18 @@
 import Mathlib
 
+theorem AddSubgroup.eq_zmultiples_int (G : AddSubgroup ℤ) (k : ℕ) (w : k ≠ 0) :
+    G = .zmultiples (k : ℤ) ↔
+      ((k : ℤ) ∈ G ∧ ∀ q ∈ Nat.primeFactors k, (k / q : Int) ∉ G) :=
+  sorry -- the interesting part
+
+
+theorem isPrimitiveRoot_iff_eq_orderOf {R : Type*} [CommMonoid R] (a : R) :
+    IsPrimitiveRoot a k ↔ k = orderOf a := by
+  constructor
+  · exact IsPrimitiveRoot.eq_orderOf
+  · rintro rfl
+    exact IsPrimitiveRoot.orderOf a
+
 @[simps]
 def zpowMulHom {G} [Group G] (g : G) : (Multiplicative ℤ) →* G where
   toFun i := g^(Multiplicative.toAdd i)
@@ -9,12 +22,22 @@ def zpowMulHom {G} [Group G] (g : G) : (Multiplicative ℤ) →* G where
 namespace AddSubgroup
 
 def ofMultiplicative {G} [AddGroup G] (Z : Subgroup (Multiplicative G)) :
-    AddSubgroup G := sorry
+    AddSubgroup G where
+  carrier := Multiplicative.toAdd '' Z.carrier
+  zero_mem' := by simpa using Z.one_mem
+  add_mem' ma mb := by
+    simp at ma mb
+    have := Z.mul_mem ma mb
+    simp_all
+  neg_mem' m := by
+    simp at m
+    have := Z.inv_mem m
+    simp_all
 
 @[simp] theorem mem_ofMultiplicative {G} [AddGroup G]
     (Z : Subgroup (Multiplicative G)) (x : G) :
-    x ∈ ofMultiplicative Z ↔ (Multiplicative.ofAdd x) ∈ Z :=
-  sorry
+    x ∈ ofMultiplicative Z ↔ (Multiplicative.ofAdd x) ∈ Z := by
+  simp [ofMultiplicative]
 
 def exponents {G} [Group G] (g : G) : AddSubgroup ℤ :=
   .ofMultiplicative (zpowMulHom g).ker
@@ -23,22 +46,35 @@ theorem mem_exponents_iff {G} [Group G] (g : G) (i : ℤ) :
     i ∈ exponents g ↔ g ^ i = 1 := by
   simp [exponents, MonoidHom.mem_ker]
 
-theorem AddSubgroup.eq_zmultiples_int (G : AddSubgroup ℤ) (k : ℕ) (w : k ≠ 0) :
-    G = zmultiples (k : ℤ) ↔
-      ((k : ℤ) ∈ G ∧ ∀ q ∈ Nat.primeFactors k, (k / q : Int) ∉ G) :=
-  sorry -- the interesting part
+@[simp] theorem zmultiples_coe_nat_inj {a b : ℕ} :
+    zmultiples (a : ℤ) = zmultiples (b : ℤ) ↔ a = b := by
+  constructor
+  · intro h
+    simp [SetLike.ext_iff] at h
+    apply Nat.dvd_antisymm
+    · specialize h (b : ℤ)
+      simp [mem_zmultiples_iff] at h
+      sorry -- easy
+    · sorry -- repeat the same
+  · rintro rfl
+    rfl
 
 end AddSubgroup
 
 open AddSubgroup
 
-theorem IsPrimitiveRoot_iff {R : Type*} [CommRing R] (a : Rˣ) :
-    IsPrimitiveRoot a k ↔ exponents a = zmultiples (k : Int) :=
-  sorry -- just restating the definition?
+theorem exponents_eq_zmultiples_orderOf {G} [Group G] (g : G) :
+    exponents g = zmultiples (orderOf g : Int) := sorry
+
+theorem IsPrimitiveRoot_iff_exponents_eq {G : Type*} [CommGroup G] (a : G) :
+    IsPrimitiveRoot a k ↔ exponents a = zmultiples (k : Int) := by
+  simp [isPrimitiveRoot_iff_eq_orderOf]
+  simp [exponents_eq_zmultiples_orderOf]
+  exact eq_comm
 
 theorem IsPrimitiveRoot_zmod_p_iff {p : ℕ} [Fact (p.Prime)] (a : (ZMod p)ˣ) :
     IsPrimitiveRoot a (p - 1) ↔ ∀ q ∈ Nat.primeFactors (p - 1), a ^ ((p - 1) / q) ≠ 1 := by
-  simp only [IsPrimitiveRoot_iff]
+  simp only [IsPrimitiveRoot_iff_exponents_eq]
   have h : p - 1 ≠ 0 := sorry
   simp only [AddSubgroup.eq_zmultiples_int _ _ h]
   simp only [mem_exponents_iff]
