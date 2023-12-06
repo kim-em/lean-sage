@@ -5,20 +5,17 @@ import Mathlib.RingTheory.RootsOfUnity.Basic
 open Lean Mathlib Json
 
 
-def sageOutput (args : Array String) : IO String := do
-  let out ← IO.Process.output { cmd := "sage", args := args }
-  pure out.stdout
+def sageOutput (args : Array String) : IO String :=
+  IO.Process.run { cmd := "sage", args := args }
 
-
-def parseStringList (l : String) : List ℕ :=
-  (((l.drop 1).dropRight 2).split (. = ' ')).map (fun s => s.stripSuffix ",") |> .map String.toNat!
-
-
+def String.parseNatList (l : String) : List ℕ :=
+  (((l.drop 1).dropRight 2).split (. = ' ')).map
+    (fun s => s.stripSuffix ",") |> .map String.toNat!
 
 unsafe def sageFactorUnsafe (n : ℕ) : List ℕ :=
-  let args := #[s!"-c", s!"print(prime_factors({n}))"] ;
+  let args := #["-c", s!"print(prime_factors({n}))"] ;
   match unsafeBaseIO (sageOutput args).toBaseIO with
-  | .ok l => parseStringList l
+  | .ok l => l.parseNatList
   | .error _ => []
 
 @[implemented_by sageFactorUnsafe]
