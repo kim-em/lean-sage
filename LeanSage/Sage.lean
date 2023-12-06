@@ -1,6 +1,7 @@
 import Mathlib.Tactic.Polyrith
 import Mathlib.Data.ZMod.Basic
 import Mathlib.RingTheory.RootsOfUnity.Basic
+import Mathlib.Tactic.RewriteSearch
 
 open Lean Mathlib Json
 
@@ -35,3 +36,10 @@ theorem computeIsPrimitiveRoot_correct (a p : ℕ) :
   computeIsPrimitiveRoot a p = true ↔
     IsPrimitiveRoot a p :=
 sorry
+
+example (a p : ℕ) (ha : a % p = 1) (hp : p.Prime) : (a : ZMod p) = 1 :=
+by
+  convert (ZMod.eq_iff_modEq_nat p (b := 1)).mpr _
+  . simp
+  . show a % p = 1 % p
+    simp [ha, hp.one_lt, Nat.mod_eq_of_lt]
