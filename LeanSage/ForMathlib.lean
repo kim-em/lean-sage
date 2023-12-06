@@ -1,11 +1,62 @@
 import Mathlib
 
+@[simps]
+def zpowMulHom {G} [Group G] (g : G) : (Multiplicative ℤ) →* G where
+  toFun i := g^(Multiplicative.toAdd i)
+  map_one' := by simp
+  map_mul' := by simp [zpow_add]
+
+namespace AddSubgroup
+
+def ofMultiplicative {G} [AddGroup G] (Z : Subgroup (Multiplicative G)) :
+    AddSubgroup G := sorry
+
+@[simp] theorem mem_ofMultiplicative {G} [AddGroup G]
+    (Z : Subgroup (Multiplicative G)) (x : G) :
+    x ∈ ofMultiplicative Z ↔ (Multiplicative.ofAdd x) ∈ Z :=
+  sorry
+
+def exponents {G} [Group G] (g : G) : AddSubgroup ℤ :=
+  .ofMultiplicative (zpowMulHom g).ker
+
+theorem mem_exponents_iff {G} [Group G] (g : G) (i : ℤ) :
+    i ∈ exponents g ↔ g ^ i = 1 := by
+  simp [exponents, MonoidHom.mem_ker]
+
+theorem AddSubgroup.eq_zmultiples_int (G : AddSubgroup ℤ) (k : ℕ) (w : k ≠ 0) :
+    G = zmultiples (k : ℤ) ↔
+      ((k : ℤ) ∈ G ∧ ∀ q ∈ Nat.primeFactors k, (k / q : Int) ∉ G) :=
+  sorry -- the interesting part
+
+end AddSubgroup
+
+open AddSubgroup
+
+theorem IsPrimitiveRoot_iff {R : Type*} [CommRing R] (a : Rˣ) :
+    IsPrimitiveRoot a k ↔ exponents a = zmultiples (k : Int) :=
+  sorry -- just restating the definition?
+
+theorem IsPrimitiveRoot_zmod_p_iff {p : ℕ} [Fact (p.Prime)] (a : (ZMod p)ˣ) :
+    IsPrimitiveRoot a (p - 1) ↔ ∀ q ∈ Nat.primeFactors (p - 1), a ^ ((p - 1) / q) ≠ 1 := by
+  simp only [IsPrimitiveRoot_iff]
+  have h : p - 1 ≠ 0 := sorry
+  simp only [AddSubgroup.eq_zmultiples_int _ _ h]
+  simp only [mem_exponents_iff]
+  simp
+  -- easy from here, with Fermat's little theorem:
+  sorry
+
+
+-----
+
 open Nat
+
 
 @[simp] theorem ZMod.val_coe (a : ZMod p) : (a.val : ZMod p) = a := sorry
 
+
 -- This theorem just belongs in Mathlib, and is surely out there!
-theorem IsPrimitiveRoot_iff {p : ℕ} [Fact (p.Prime)] (a : ZMod p) :
+theorem IsPrimitiveRoot_iff' {p : ℕ} [Fact (p.Prime)] (a : ZMod p) :
     IsPrimitiveRoot a (p - 1) ↔ a ≠ 0 ∧ ∀ q ∈ primeFactors (p - 1), a ^ ((p - 1) / q) ≠ 1 := by
   have p_prime : p.Prime := Fact.out
   constructor
