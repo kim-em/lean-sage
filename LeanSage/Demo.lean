@@ -30,8 +30,13 @@ opaque sagePrimeFactors (n : ℕ) : List ℕ
 @[simp] axiom mem_sagePrimeFactors_iff {p n : ℕ} :
     p ∈ sagePrimeFactors n ↔ p ∈ Nat.primeFactors n
 
--- Check that it works!
-#eval sagePrimeFactors 102343422332  -- prints [2, 229, 2399, 46573]
+def p := 22801763489
+
+-- Check that it works:
+
+/-- info: [2, 7, 47, 309403] -/
+#guard_msgs in
+#eval sagePrimeFactors (p - 1)
 
 /--
 Now define our new algorithm.
@@ -41,17 +46,21 @@ Note this is an algorithm: it return a `Bool` not a `Prop`, and is computable:
 def sageIsPrimitiveRoot (a : ℕ) (p : ℕ) : Bool :=
   (a : ZMod p) != 0 && (sagePrimeFactors (p - 1)).all fun q => (a ^ ((p - 1) / q) : ZMod p) != 1
 
--- TODO run an example
+#guard !sageIsPrimitiveRoot 2 p
+#guard sageIsPrimitiveRoot 11 p
 
 /--
 Now we verify that that this algorithm has the expected behaviour by relating it
 to existing formalized notions in Mathlib.
 
-Here `IsPrimitiveRoot x k` asserts that `a` is a primitive root of unity of order `k`
-in some commutative monoid.
+Here Mathlib's `IsPrimitiveRoot x k` asserts that
+`a` is a primitive root of unity of order `k` in some commutative monoid.
 -/
-theorem IsPrimitiveRoot_iff_sageIsPrimitiveRoot {p : ℕ} [Fact (p.Prime)] (a : ZMod p) :
-    IsPrimitiveRoot a (p - 1) ↔ sageIsPrimitiveRoot a.val p := by
-  -- This proof relies on a theorem in another file that right now has some `sorry`s
-  -- but we know how to resolve them, and these theorems properly belong in Mathlib (soon!).
-  simp [IsPrimitiveRoot_iff, sageIsPrimitiveRoot]
+theorem IsPrimitiveRoot_iff_sageIsPrimitiveRoot {p : ℕ} [Fact (p.Prime)] (a : (ZMod p)ˣ) :
+    IsPrimitiveRoot a (p - 1) ↔ sageIsPrimitiveRoot a.val.val p := by
+  -- This proof relies on several theorems in another file,
+  -- that properly belong in Mathlib (soon!).
+  have h : p - 1 ≠ 0 := by simpa using Nat.Prime.one_lt Fact.out
+  simp [IsPrimitiveRoot_zmod_iff, sageIsPrimitiveRoot]
+  norm_cast
+  sorry

@@ -178,7 +178,7 @@ theorem IsPrimitiveRoot_iff_exponents_eq {G : Type*} [CommGroup G] (a : G) :
   simp [exponents_eq_zmultiples_orderOf]
   exact eq_comm
 
-theorem IsPrimitiveRoot_zmod_p_iff {p : ℕ} [Fact (p.Prime)] (a : (ZMod p)ˣ) :
+theorem IsPrimitiveRoot_zmod_iff {p : ℕ} [Fact (p.Prime)] (a : (ZMod p)ˣ) :
     IsPrimitiveRoot a (p - 1) ↔
       ∀ q ∈ Nat.primeFactors (p - 1), a ^ ((p - 1) / q) ≠ 1 := by
   simp only [IsPrimitiveRoot_iff_exponents_eq]
@@ -186,3 +186,10 @@ theorem IsPrimitiveRoot_zmod_p_iff {p : ℕ} [Fact (p.Prime)] (a : (ZMod p)ˣ) :
   simp [eq_zmultiples_int _ _ h, mem_exponents_iff,
     ZMod.units_pow_card_sub_one_eq_one]
   norm_cast
+
+@[simp] theorem IsPrimitiveRoot_zero {M : Type*} [CommRing M] [Nontrivial M]
+    (w : k ≠ 0) : IsPrimitiveRoot (0 : M) k ↔ False := by
+  constructor
+  · rintro ⟨⟩
+    simp_all
+  · simp_all
