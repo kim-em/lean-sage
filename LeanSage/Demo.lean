@@ -60,7 +60,6 @@ theorem IsPrimitiveRoot_iff_sageIsPrimitiveRoot {p : ℕ} [Fact (p.Prime)] (a : 
     IsPrimitiveRoot a (p - 1) ↔ sageIsPrimitiveRoot a.val.val p := by
   -- This proof relies on several theorems in another file,
   -- that properly belong in Mathlib (soon!).
-  have h : p - 1 ≠ 0 := by simpa using Nat.Prime.one_lt Fact.out
   simp [IsPrimitiveRoot_zmod_iff, sageIsPrimitiveRoot]
   norm_cast
-  sorry
+  simp only [Units.val_eq_one]
