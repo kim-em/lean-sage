@@ -63,3 +63,5 @@ theorem IsPrimitiveRoot_iff_sageIsPrimitiveRoot {p : ℕ} [Fact (p.Prime)] (a : 
   simp [IsPrimitiveRoot_zmod_iff, sageIsPrimitiveRoot]
   norm_cast
   simp only [Units.val_eq_one]
+
+#print axioms IsPrimitiveRoot_iff_sageIsPrimitiveRoot -- includes `mem_sagePrimeFactors_iff`
