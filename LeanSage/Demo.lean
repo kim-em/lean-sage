@@ -26,17 +26,43 @@ but also prevent Lean from knowing anything about the implementation.
 @[implemented_by sagePrimeFactorsUnsafe]
 opaque sagePrimeFactors (n : ℕ) : List ℕ
 
-/-- An axiom specifying the behaviour of `sagePrimeFactors`. -/
-@[simp] axiom mem_sagePrimeFactors_iff {p n : ℕ} :
-    p ∈ sagePrimeFactors n ↔ p ∈ Nat.primeFactors n
-
 def p := 22801763489
-
--- Check that it works:
 
 /-- info: [2, 7, 47, 309403] -/
 #guard_msgs in
 #eval sagePrimeFactors (p - 1)
+
+/-!
+# We could provide a verified wrapper.
+-/
+
+def rdiv (n : ℕ) (m : ℕ) : ℕ := if n % m = 0 then rdiv (n / m) m else n
+decreasing_by sorry
+
+def rdiv' (n : ℕ) (ms : List ℕ) : ℕ := ms.foldl rdiv n
+
+def safePrimeFactors (n : ℕ) : Finset ℕ :=
+  let candidates := sagePrimeFactors n
+  if candidates.all Nat.Prime && rdiv' n candidates = 1 then
+    candidates.toFinset
+  else
+    Nat.primeFactors n
+
+theorem safePrimeFactors_eq_primeFactors {n : ℕ} : safePrimeFactors n = Nat.primeFactors n := by
+  dsimp [safePrimeFactors]
+  split
+  · rename_i h
+    simp at h
+    sorry
+  · rfl
+
+/-!
+# Or just axiomatize it, and build on top!
+-/
+
+/-- An axiom specifying the behaviour of `sagePrimeFactors`. -/
+@[simp] axiom mem_sagePrimeFactors_iff {p n : ℕ} :
+    p ∈ sagePrimeFactors n ↔ p ∈ Nat.primeFactors n
 
 /--
 Now define our new algorithm.
