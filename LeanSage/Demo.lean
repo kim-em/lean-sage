@@ -5,17 +5,32 @@ import LeanSage.ForMathlib
 def sageOutput (args : Array String) : IO String := do
   IO.Process.run { cmd := "sage", args := args }
 
-/-- Parse a string containing a list of integers. Should be a proper parser! -/
-def String.parseNatList (l : String) : List ℕ :=
-  (((l.drop 1).dropRight 2).split (. = ' ')).map
-    (fun s => s.stripSuffix ",") |> .map String.toNat!
+def Prod.ofList {α : Type _} [Inhabited α] : List α → α × α
+  | [] => (default, default)
+  | [x] => (x, default)
+  | x :: y :: _ => (x, y)
 
-/-- An "unsafe" function that calls `sage` to find the prime factors of a number. -/
+def String.parseNatPairList (l : String) : List (ℕ × ℕ) :=
+  let split := l.splitOn ","
+  let filtered := split.map fun s => (String.mk (s.toList.filter Char.isDigit)).toNat!
+  filtered.toChunks 2 |>.map Prod.ofList
+
+#guard String.parseNatPairList "[(2, 2), (3, 1), (13, 1)]" = [(2, 2), (3, 1), (13, 1)]
+
+def runLengthDecode {α : Type*} : List (α × Nat) → List α
+  | [] => []
+  | (_, 0) :: l => runLengthDecode l
+  | (a, n + 1) :: l => a :: runLengthDecode ((a, n) :: l)
+
 unsafe def sagePrimeFactorsUnsafe (n : ℕ) : List ℕ :=
-  let args := #["-c", s!"print(prime_factors({n}))"] ;
+  let args := #["-c", s!"print(list({n}.factor()))"] ;
   match unsafeBaseIO (sageOutput args).toBaseIO with
-  | .ok l => l.parseNatList
+  | .ok l => runLengthDecode l.parseNatPairList
   | .error _ => []
+
+/-- info: [3, 3, 7] -/
+#guard_msgs in
+#eval sagePrimeFactorsUnsafe 63
 
 /--
 An "opaque" wrapper around the unsafe function.
@@ -28,41 +43,40 @@ opaque sagePrimeFactors (n : ℕ) : List ℕ
 
 def p := 22801763489
 
-/-- info: [2, 7, 47, 309403] -/
-#guard_msgs in
+/-- info: [2, 2, 2, 2, 2, 7, 7, 47, 309403] -/
+#guard_msgs in -- run this command and check that they agree with the above comment
 #eval sagePrimeFactors (p - 1)
 
-/-!
-# We could provide a verified wrapper.
--/
-
-def rdiv (n : ℕ) (m : ℕ) : ℕ := if n % m = 0 then rdiv (n / m) m else n
-decreasing_by sorry
-
-def rdiv' (n : ℕ) (ms : List ℕ) : ℕ := ms.foldl rdiv n
-
-def safePrimeFactors (n : ℕ) : Finset ℕ :=
+def safePrimeFactors (n : ℕ) : List ℕ :=
   let candidates := sagePrimeFactors n
-  if candidates.all Nat.Prime && rdiv' n candidates = 1 then
-    candidates.toFinset
+  if candidates.all Nat.Prime && candidates.prod = n && candidates.Sorted (· ≤ ·) then    -- pure function building to specify order
+    candidates
   else
-    Nat.primeFactors n
+    Nat.factors n -- this is a list of prime factorisation
 
-theorem safePrimeFactors_eq_primeFactors {n : ℕ} : safePrimeFactors n = Nat.primeFactors n := by
-  dsimp [safePrimeFactors]
+open List
+
+theorem safePrimeFactors_eq_factors {n : ℕ} : safePrimeFactors n = Nat.factors n := by
+  unfold safePrimeFactors
+  dsimp
   split
   · rename_i h
     simp at h
-    sorry
+    obtain ⟨⟨ h1, h2⟩, h3⟩  := h
+    suffices w: sagePrimeFactors n ~ n.factors by
+      exact List.eq_of_perm_of_sorted w h3 n.factors_sorted
+    exact n.factors_unique h2 h1
   · rfl
 
-/-!
-# Or just axiomatize it, and build on top!
+#eval safePrimeFactors (100000000520000000627)
+
+/- This runs forever
+#eval Nat.factors (100000000520000000627)
 -/
 
-/-- An axiom specifying the behaviour of `sagePrimeFactors`. -/
-@[simp] axiom mem_sagePrimeFactors_iff {p n : ℕ} :
-    p ∈ sagePrimeFactors n ↔ p ∈ Nat.primeFactors n
+@[simp] theorem mem_safePrimeFactors_iff {p n : ℕ} :
+    p ∈ safePrimeFactors n ↔ p ∈ Nat.primeFactors n := by
+  simp [safePrimeFactors_eq_factors]
 
 /--
 Now define our new algorithm.
@@ -70,7 +84,7 @@ Now define our new algorithm.
 Note this is an algorithm: it return a `Bool` not a `Prop`, and is computable:
 -/
 def sageIsPrimitiveRoot (a : ℕ) (p : ℕ) : Bool :=
-  (a : ZMod p) != 0 && (sagePrimeFactors (p - 1)).all fun q => (a ^ ((p - 1) / q) : ZMod p) != 1
+  (a : ZMod p) != 0 && (safePrimeFactors (p - 1)).all fun q => (a ^ ((p - 1) / q) : ZMod p) != 1
 
 #guard !sageIsPrimitiveRoot 2 p
 #guard sageIsPrimitiveRoot 11 p
@@ -90,4 +104,4 @@ theorem IsPrimitiveRoot_iff_sageIsPrimitiveRoot {p : ℕ} [Fact (p.Prime)] (a : 
   norm_cast
   simp only [Units.val_eq_one]
 
-#print axioms IsPrimitiveRoot_iff_sageIsPrimitiveRoot -- includes `mem_sagePrimeFactors_iff`
+#print axioms IsPrimitiveRoot_iff_sageIsPrimitiveRoot
